@@ -1,3 +1,5 @@
+viodeo Link - https://drive.google.com/file/d/1XGn_-pngfHtboZCx504rIx0PLWQ161bv/view?usp=sharing
+
 # FinanceBot — Personal Finance Chatbot (Frontend + Backend)
 
 A small, self-contained web app that accepts a CSV of transactions, summarizes spending, and lets you ask natural‑language questions about your finances. The backend is **FastAPI** and the UI is a single static HTML file using **Chart.js**. For local AI reasoning, the API integrates with **Ollama** (default model: `llama3.2`).
