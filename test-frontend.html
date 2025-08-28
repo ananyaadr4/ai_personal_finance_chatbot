@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FinanceBot - Complete Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1200px; 
+            margin: 20px auto; 
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .upload-area { 
+            border: 2px dashed #ccc; 
+            padding: 20px; 
+            text-align: center; 
+            margin: 20px 0;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+        .chat-area { 
+            border: 1px solid #ddd; 
+            height: 400px; 
+            padding: 15px; 
+            overflow-y: auto; 
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+        .message { 
+            margin: 10px 0; 
+            padding: 12px; 
+            border-radius: 8px; 
+            max-width: 80%;
+        }
+        .user-message { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+        .ai-message { 
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+        }
+        .system-message {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            font-style: italic;
+        }
+        .input-area { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 15px;
+        }
+        input[type="text"] { 
+            flex: 1; 
+            padding: 12px; 
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+        }
+        input[type="text"]:focus {
+            border-color: #667eea;
+        }
+        button { 
+            padding: 12px 24px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            border: none; 
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; font-weight: bold; }
+        .chart-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .chart-btn {
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .chart-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>FinanceBot</h1>
+    </div>
+
+    <div class="upload-area">
+        <input type="file" id="csvFile" accept=".csv" style="margin-right: 10px;">
+        <button onclick="uploadFile()">Upload CSV</button>
+        <div id="uploadStatus" style="margin-top: 10px;"></div>
+    </div>
+
+    <div id="statsSection" style="display: none;">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalSpent">$0</div>
+                <div class="stat-label">Total Spent</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalTransactions">0</div>
+                <div class="stat-label">Transactions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgTransaction">$0</div>
+                <div class="stat-label">Avg Transaction</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="categoriesCount">0</div>
+                <div class="stat-label">Categories</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h3>Chat with AI</h3>
+            <div class="chat-area" id="chatArea">
+                <div class="system-message">Upload a CSV file to start chatting about your finances...</div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="Ask about your finances..." disabled>
+                <button onclick="sendMessage()" id="sendBtn" disabled>Send</button>
+            </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Financial Insights</h3>
+            <div class="chart-selector">
+                <div class="chart-btn active" onclick="showChart('category')">Categories</div>
+                <div class="chart-btn" onclick="showChart('monthly')">Monthly</div>
+                <div class="chart-btn" onclick="showChart('top')">Top Expenses</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = null;
+        let currentChart = null;
+        let transactionData = null;
+        
+        async function uploadFile() {
+            const fileInput = document.getElementById('csvFile');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                document.getElementById('uploadStatus').innerHTML = 
+                    '<div class="error">Please select a CSV file first.</div>';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('http://localhost:8000/upload-transactions', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    sessionId = data.session_id;
+                    transactionData = data;
+                    
+                    document.getElementById('uploadStatus').innerHTML = 
+                        `<div class="success">Successfully uploaded ${data.transaction_count} transactions!</div>`;
+                    document.getElementById('messageInput').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                    document.getElementById('statsSection').style.display = 'block';
+                    
+                    // Update stats
+                    updateStats(data.stats);
+                    
+                    // Show initial chart
+                    showChart('category');
+                    
+                    addMessage('system', `Great! I've analyzed your ${data.transaction_count} transactions across ${data.stats.categories_count} categories. Total spending: $${data.stats.total_spent.toFixed(2)}. Ask me questions!`);
+                } else {
+                    document.getElementById('uploadStatus').innerHTML = 
+                        `<div class="error">Error: ${data.detail}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('uploadStatus').innerHTML = 
+                    `<div class="error">Upload failed: ${error.message}</div>`;
+            }
+        }
+        
+        function updateStats(stats) {
+            document.getElementById('totalSpent').textContent = `$${stats.total_spent.toFixed(2)}`;
+            document.getElementById('totalTransactions').textContent = stats.total_transactions;
+            document.getElementById('avgTransaction').textContent = `$${stats.average_transaction.toFixed(2)}`;
+            document.getElementById('categoriesCount').textContent = stats.categories_count;
+        }
+        
+        function showChart(type) {
+            if (!transactionData) return;
+            
+            // Update button states
+            document.querySelectorAll('.chart-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Find the clicked button based on type and set it as active
+            const buttons = document.querySelectorAll('.chart-btn');
+            buttons.forEach(btn => {
+                if ((type === 'category' && btn.textContent.includes('Categories')) ||
+                    (type === 'monthly' && btn.textContent.includes('Monthly')) ||
+                    (type === 'top' && btn.textContent.includes('Top'))) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            const stats = transactionData.stats;
+            
+            switch(type) {
+                case 'category':
+                    showCategoryChart(ctx, stats.category_breakdown);
+                    break;
+                case 'monthly':
+                    showMonthlyChart(ctx, stats.monthly_breakdown);
+                    break;
+                case 'top':
+                    showTopExpensesChart(ctx, stats.top_merchants);
+                    break;
+            }
+        }
+        
+        function showCategoryChart(ctx, categoryData) {
+            const labels = Object.keys(categoryData);
+            const data = Object.values(categoryData);
+            
+            currentChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Spending by Category'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function showMonthlyChart(ctx, monthlyData) {
+            const labels = Object.keys(monthlyData).sort();
+            const data = labels.map(month => monthlyData[month]);
+            
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Monthly Spending',
+                        data: data,
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Monthly Spending Trend'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function showTopExpensesChart(ctx, merchantData) {
+            const entries = Object.entries(merchantData).slice(0, 8);
+            const labels = entries.map(([merchant, count]) => merchant.length > 15 ? merchant.substring(0, 15) + '...' : merchant);
+            const data = entries.map(([merchant, count]) => count);
+            
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Transaction Count',
+                        data: data,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Top Merchants by Transaction Count'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message || !sessionId) return;
+            
+            addMessage('user', message);
+            input.value = '';
+            
+            // Show loading
+            const loadingMsg = addMessage('ai', 'Analyzing your data...');
+            
+            try {
+                const response = await fetch('http://localhost:8000/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: sessionId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Remove loading message
+                loadingMsg.remove();
+                
+                if (response.ok) {
+                    addMessage('ai', data.response);
+                    
+                    // Auto-show relevant chart based on query
+                    if (message.toLowerCase().includes('category') || message.toLowerCase().includes('breakdown')) {
+                        showChart('category');
+                    } else if (message.toLowerCase().includes('month') || message.toLowerCase().includes('trend')) {
+                        showChart('monthly');
+                    } else if (message.toLowerCase().includes('biggest') || message.toLowerCase().includes('top')) {
+                        showChart('top');
+                    }
+                } else {
+                    addMessage('ai', `Error: ${data.detail}`);
+                }
+            } catch (error) {
+                loadingMsg.remove();
+                addMessage('ai', `Connection error: ${error.message}`);
+            }
+        }
+        
+        function addMessage(type, text) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = text;
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            return messageDiv;
+        }
+        
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
